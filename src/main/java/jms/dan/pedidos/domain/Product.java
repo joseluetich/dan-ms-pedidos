@@ -3,15 +3,15 @@ package jms.dan.pedidos.domain;
 public class Product {
     private Integer id;
     private String description;
-    private Double precio;
+    private Double price;
 
     public Product() {
     }
 
-    public Product(Integer id, String description, Double precio) {
+    public Product(Integer id, String description, Double price) {
         this.id = id;
         this.description = description;
-        this.precio = precio;
+        this.price = price;
     }
 
     public Integer getId() {
@@ -30,11 +30,11 @@ public class Product {
         this.description = description;
     }
 
-    public Double getPrecio() {
-        return precio;
+    public Double getPrice() {
+        return price;
     }
 
-    public void setPrecio(Double precio) {
-        this.precio = precio;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 }

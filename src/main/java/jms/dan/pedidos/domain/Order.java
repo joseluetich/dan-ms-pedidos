@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Order {
     private Integer id;
-    private Instant fechaPedido;
+    private Instant orderDate;
     private Construction construction;
     private List<OrderDetail> details;
     private OrderState state;
@@ -13,9 +13,9 @@ public class Order {
     public Order() {
     }
 
-    public Order(Integer id, Instant fechaPedido, Construction construction, List<OrderDetail> details, OrderState state) {
+    public Order(Integer id, Instant orderDate, Construction construction, List<OrderDetail> details, OrderState state) {
         this.id = id;
-        this.fechaPedido = fechaPedido;
+        this.orderDate = orderDate;
         this.construction = construction;
         this.details = details;
         this.state = state;
@@ -29,12 +29,12 @@ public class Order {
         this.id = id;
     }
 
-    public Instant getFechaPedido() {
-        return fechaPedido;
+    public Instant getOrderDate() {
+        return orderDate;
     }
 
-    public void setFechaPedido(Instant fechaPedido) {
-        this.fechaPedido = fechaPedido;
+    public void setOrderDate(Instant orderDate) {
+        this.orderDate = orderDate;
     }
 
     public Construction getConstruction() {
