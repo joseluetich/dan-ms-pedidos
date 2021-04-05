@@ -51,4 +51,12 @@ public class RestOrder {
         return ResponseEntity.ok(ordersList);
     }
 
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<Order> getOrderById(@PathVariable Integer id){
+        Optional<Order> order = ordersList
+                .stream()
+                .filter(or -> or.getId().equals(id))
+                .findFirst();
+        return ResponseEntity.of(order);
+    }
 }
