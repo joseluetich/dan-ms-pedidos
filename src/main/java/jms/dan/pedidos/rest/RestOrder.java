@@ -59,6 +59,20 @@ public class RestOrder {
         }
     }
 
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<Order> deleteOrder(@PathVariable Integer id){
+        OptionalInt indexOpt =   IntStream.range(0, ordersList.size())
+                .filter(i -> ordersList.get(i).getId().equals(id))
+                .findFirst();
+
+        if(indexOpt.isPresent()){
+            ordersList.remove(indexOpt.getAsInt());
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders(){
         return ResponseEntity.ok(ordersList);
@@ -72,4 +86,5 @@ public class RestOrder {
                 .findFirst();
         return ResponseEntity.of(order);
     }
+
 }
