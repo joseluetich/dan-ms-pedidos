@@ -1,11 +1,15 @@
 package jms.dan.pedidos.rest;
 
 import jms.dan.pedidos.domain.Order;
+import jms.dan.pedidos.domain.OrderDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -19,4 +23,32 @@ public class RestOrder {
         ordersList.add(newOrder);
         return ResponseEntity.ok(newOrder);
     }
+
+    @PostMapping(path = "/{id}/detail")
+    public ResponseEntity<OrderDetail> addOrderDetail(@RequestBody OrderDetail newOrderDetail, @PathVariable Integer id) {
+
+        OptionalInt indexOpt = IntStream.range(0, ordersList.size())
+                .filter(i -> ordersList.get(i).getId().equals(id))
+                .findFirst();
+        if (indexOpt.isPresent()){
+            List<OrderDetail> details = ordersList.get(indexOpt.getAsInt()).getDetails();
+            if(details!=null) {
+                details.add(newOrderDetail);
+            }
+            else {
+                List<OrderDetail> newList = new ArrayList<>();
+                newList.add(newOrderDetail);
+                ordersList.get(indexOpt.getAsInt()).setDetails(newList);
+            }
+            return ResponseEntity.ok(newOrderDetail);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Order>> getAllOrders(){
+        return ResponseEntity.ok(ordersList);
+    }
+
 }
