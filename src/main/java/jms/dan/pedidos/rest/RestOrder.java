@@ -46,6 +46,19 @@ public class RestOrder {
         }
     }
 
+    @PutMapping(path = "/{id}")
+    public ResponseEntity<Order> updateOrder(@RequestBody Order newOrder, @PathVariable Integer id) {
+        OptionalInt indexOpt = IntStream.range(0, ordersList.size())
+                .filter(i -> ordersList.get(i).getId().equals(id))
+                .findFirst();
+        if (indexOpt.isPresent()){
+            ordersList.set(indexOpt.getAsInt(), newOrder);
+            return ResponseEntity.ok(newOrder);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders(){
         return ResponseEntity.ok(ordersList);
