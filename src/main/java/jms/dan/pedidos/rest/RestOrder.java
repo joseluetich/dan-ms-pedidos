@@ -106,4 +106,20 @@ public class RestOrder {
         return ResponseEntity.of(order);
     }
 
+    @GetMapping(path = "/{idOrder}/detail/{idDetail}")
+    public ResponseEntity<OrderDetail> getOrderDetailById(@PathVariable Integer idOrder, @PathVariable Integer idDetail){
+        OptionalInt indexOpt = IntStream.range(0, ordersList.size())
+                .filter(i -> ordersList.get(i).getId().equals(idOrder))
+                .findFirst();
+        if(indexOpt.isPresent()){
+            List<OrderDetail> details = ordersList.get(indexOpt.getAsInt()).getDetails();
+            Optional<OrderDetail> orderDetail = details
+                    .stream()
+                    .filter(od -> od.getId().equals(idDetail))
+                    .findFirst();
+            return ResponseEntity.of(orderDetail);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
 }
