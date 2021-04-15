@@ -73,6 +73,25 @@ public class RestOrder {
         }
     }
 
+    @DeleteMapping(path = "/{idOrder}/detail/{idDetail}")
+    public ResponseEntity<Order> deleteOrder(@PathVariable Integer idOrder, @PathVariable Integer idDetail){
+        OptionalInt indexOpt =   IntStream.range(0, ordersList.size())
+                .filter(i -> ordersList.get(i).getId().equals(idOrder))
+                .findFirst();
+        if(indexOpt.isPresent()){
+            List<OrderDetail> details = ordersList.get(indexOpt.getAsInt()).getDetails();
+            OptionalInt indexOptDetail =   IntStream.range(0, details.size())
+                    .filter(i -> details.get(i).getId().equals(idDetail))
+                    .findFirst();
+            if(indexOptDetail.isPresent()) {
+                details.remove(indexOptDetail.getAsInt());
+            }
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders(){
         return ResponseEntity.ok(ordersList);
