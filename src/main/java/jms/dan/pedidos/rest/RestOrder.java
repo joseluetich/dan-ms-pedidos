@@ -61,7 +61,7 @@ public class RestOrder {
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<Order> deleteOrder(@PathVariable Integer id){
-        OptionalInt indexOpt =   IntStream.range(0, ordersList.size())
+        OptionalInt indexOpt = IntStream.range(0, ordersList.size())
                 .filter(i -> ordersList.get(i).getId().equals(id))
                 .findFirst();
 
@@ -80,13 +80,16 @@ public class RestOrder {
                 .findFirst();
         if(indexOpt.isPresent()){
             List<OrderDetail> details = ordersList.get(indexOpt.getAsInt()).getDetails();
-            OptionalInt indexOptDetail =   IntStream.range(0, details.size())
+            OptionalInt indexOptDetail = IntStream.range(0, details.size())
                     .filter(i -> details.get(i).getId().equals(idDetail))
                     .findFirst();
             if(indexOptDetail.isPresent()) {
                 details.remove(indexOptDetail.getAsInt());
+                return ResponseEntity.ok().build();
             }
-            return ResponseEntity.ok().build();
+            else {
+                return ResponseEntity.notFound().build();
+            }
         } else {
             return ResponseEntity.notFound().build();
         }
