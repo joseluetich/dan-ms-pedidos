@@ -8,6 +8,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.util.*;
@@ -121,23 +122,14 @@ public class RestOrder {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping(path = "/construction/{constructionId}")
-    public ResponseEntity<Order> getOrderByConstructionId(@PathVariable Integer constructionId) {
-        Optional<Order> order = ordersList
-                .stream()
-                .filter(or -> or.getConstruction().getId().equals(constructionId))
-                .findFirst();
-        return ResponseEntity.of(order);
-    }
-
     // TODO It Should filter by all params at same time
     @GetMapping
     public ResponseEntity<List<Order>> getOrders(@RequestParam(required = false) Integer clientId, @RequestParam(required = false) String clientCUIT,
                                                  @RequestParam(required = false) Integer constructionId) {
         Integer clientIdExtra = null;
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = new RestTemplateBuilder().build();
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -148,21 +140,24 @@ public class RestOrder {
             return new ResponseEntity<>(orders, HttpStatus.OK);
         }
         if (clientCUIT != null) {
-            String url = "http://localhost:9090/api-users/clients/cuit/{cuit}";
-            ResponseEntity<Client> responseEntity = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    Client.class,
-                    clientCUIT);
-
-            System.out.println(responseEntity.getStatusCode());
-            clientIdExtra = responseEntity.getStatusCode().equals(HttpStatus.OK) ?
-                    Objects.requireNonNull(responseEntity.getBody()).getId() : null;
+            String url = "http://localhost:8081/api-users/clients/cuit/" + clientCUIT;
+            ResponseEntity<Client> responseEntity;
+            try {
+                responseEntity = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        entity,
+                        Client.class);
+                clientIdExtra = responseEntity.getStatusCode().equals(HttpStatus.OK) ?
+                        Objects.requireNonNull(responseEntity.getBody()).getId() : null;
+            } catch (HttpClientErrorException exception) {
+                return new ResponseEntity<>(new ArrayList<>(), exception.getStatusCode());
+            }
         }
+
         if (clientId != null || clientIdExtra != null) {
             Integer client = clientId != null ? clientId : clientIdExtra;
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("http://localhost:9090/api-users/constructions")
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("http://localhost:8081/api-users/constructions")
                     .queryParam("clientId", client);
             ResponseEntity<List<Construction>> responseEntity = restTemplate.exchange(builder.toUriString(),
                     HttpMethod.GET,
