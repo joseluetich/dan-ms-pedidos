@@ -4,19 +4,16 @@ import jms.dan.pedidos.domain.Client;
 import jms.dan.pedidos.domain.Construction;
 import jms.dan.pedidos.domain.Order;
 import jms.dan.pedidos.domain.OrderDetail;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/orders")
 public class RestOrder {
     private static final List<Order> ordersList = new ArrayList<>();
     private static Integer ID_GEN = 1;
@@ -122,17 +119,11 @@ public class RestOrder {
         return ResponseEntity.notFound().build();
     }
 
-    // TODO It Should filter by all params at same time
+    // TODO it should filter by all params at same time
     @GetMapping
     public ResponseEntity<List<Order>> getOrders(@RequestParam(required = false) Integer clientId, @RequestParam(required = false) String clientCUIT,
                                                  @RequestParam(required = false) Integer constructionId) {
         Integer clientIdExtra = null;
-        RestTemplate restTemplate = new RestTemplateBuilder().build();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
         if (constructionId != null) {
             List<Order> orders = ordersList
                     .stream()
@@ -140,39 +131,42 @@ public class RestOrder {
             return new ResponseEntity<>(orders, HttpStatus.OK);
         }
         if (clientCUIT != null) {
-            String url = "http://localhost:8081/api-users/clients/cuit/" + clientCUIT;
-            ResponseEntity<Client> responseEntity;
+            WebClient webClient = WebClient.create("http://localhost:8080/api-users/clients/cuit/" + clientCUIT);
             try {
-                responseEntity = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        entity,
-                        Client.class);
-                clientIdExtra = responseEntity.getStatusCode().equals(HttpStatus.OK) ?
-                        Objects.requireNonNull(responseEntity.getBody()).getId() : null;
-            } catch (HttpClientErrorException exception) {
-                return new ResponseEntity<>(new ArrayList<>(), exception.getStatusCode());
+                ResponseEntity<Client> response = webClient.get()
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .toEntity(Client.class)
+                        .block();
+                clientIdExtra = response.getStatusCode().equals(HttpStatus.OK) ?
+                        Objects.requireNonNull(response.getBody()).getId() : null;
+            } catch (WebClientException e) {
+                return new ResponseEntity<>(new ArrayList<>(), HttpStatus.ACCEPTED);
             }
         }
 
         if (clientId != null || clientIdExtra != null) {
             Integer client = clientId != null ? clientId : clientIdExtra;
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("http://localhost:8081/api-users/constructions")
-                    .queryParam("clientId", client);
-            ResponseEntity<List<Construction>> responseEntity = restTemplate.exchange(builder.toUriString(),
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<List<Construction>>() {
-                    });
 
-            if (responseEntity.getStatusCode().equals(HttpStatus.OK)) {
-                List<Construction> constructions = responseEntity.getBody();
-                if(constructions == null || constructions.isEmpty()) return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
-                List<Integer> constructionsId = constructions.stream().map(Construction::getId).collect(Collectors.toList());
-                List<Order> orders = ordersList
-                        .stream()
-                        .filter(or -> constructionsId.contains(or.getConstruction().getId())).collect(Collectors.toList());
-                return new ResponseEntity<>(orders, HttpStatus.OK);
+            WebClient webClient = WebClient.create("http://localhost:8080/api-users/constructions?clientId=" + client);
+            try {
+                ResponseEntity<List<Construction>> response = webClient.get()
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .toEntityList(Construction.class)
+                        .block();
+                if (response.getStatusCode().equals(HttpStatus.OK)) {
+                    List<Construction> constructions = response.getBody();
+                    if (constructions == null || constructions.isEmpty())
+                        return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
+                    List<Integer> constructionsId = constructions.stream().map(Construction::getId).collect(Collectors.toList());
+                    List<Order> orders = ordersList
+                            .stream()
+                            .filter(or -> constructionsId.contains(or.getConstruction().getId())).collect(Collectors.toList());
+                    return new ResponseEntity<>(orders, HttpStatus.OK);
+                }
+            } catch (WebClientException e) {
+                return new ResponseEntity<>(new ArrayList<>(), HttpStatus.ACCEPTED);
             }
         }
         return ResponseEntity.ok(ordersList);
