@@ -1,19 +1,21 @@
 package jms.dan.pedidos.domain;
 
+import jms.dan.pedidos.dto.ConstructionDTO;
+
 import java.time.Instant;
 import java.util.List;
 
 public class Order {
     private Integer id;
     private Instant orderDate;
-    private Construction construction;
+    private ConstructionDTO construction;
     private List<OrderDetail> details;
     private OrderState state;
 
     public Order() {
     }
 
-    public Order(Integer id, Instant orderDate, Construction construction, List<OrderDetail> details, OrderState state) {
+    public Order(Integer id, Instant orderDate, ConstructionDTO construction, List<OrderDetail> details, OrderState state) {
         this.id = id;
         this.orderDate = orderDate;
         this.construction = construction;
@@ -37,11 +39,11 @@ public class Order {
         this.orderDate = orderDate;
     }
 
-    public Construction getConstruction() {
+    public ConstructionDTO getConstruction() {
         return construction;
     }
 
-    public void setConstruction(Construction construction) {
+    public void setConstruction(ConstructionDTO construction) {
         this.construction = construction;
     }
 

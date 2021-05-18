@@ -1,14 +1,14 @@
-package jms.dan.pedidos.domain;
+package jms.dan.pedidos.dto;
 
-public class Client {
+public class ClientDTO {
     private Integer id;
     private String businessName;
     private String cuit;
     private String mail;
 
-    public Client () {}
+    public ClientDTO () {}
 
-    public Client(Integer id, String businessName, String cuit, String mail) {
+    public ClientDTO(Integer id, String businessName, String cuit, String mail) {
         this.id = id;
         this.businessName = businessName;
         this.cuit = cuit;

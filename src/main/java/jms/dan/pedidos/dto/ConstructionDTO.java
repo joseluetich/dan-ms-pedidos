@@ -1,13 +1,13 @@
-package jms.dan.pedidos.domain;
+package jms.dan.pedidos.dto;
 
-public class Construction {
+public class ConstructionDTO {
     private Integer id;
     private String description;
 
-    public Construction() {
+    public ConstructionDTO() {
     }
 
-    public Construction(Integer id, String description) {
+    public ConstructionDTO(Integer id, String description) {
         this.id = id;
         this.description = description;
     }
