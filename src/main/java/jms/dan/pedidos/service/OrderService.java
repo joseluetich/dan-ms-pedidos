@@ -4,6 +4,7 @@ import jms.dan.pedidos.domain.Order;
 import jms.dan.pedidos.domain.OrderDetail;
 import jms.dan.pedidos.dto.ClientDTO;
 import jms.dan.pedidos.dto.ConstructionDTO;
+import jms.dan.pedidos.dto.ProductDTO;
 import jms.dan.pedidos.exceptions.ApiException;
 import jms.dan.pedidos.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,21 +31,70 @@ public class OrderService implements IOrderService {
 
     @Override
     public void createOrder(Order newOrder) {
+        checkProductStock(newOrder.getDetails(), null);
         orderRepository.createOrder(newOrder);
     }
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
+        checkProductStock(null, newOrderDetail);
         orderRepository.addOrderDetail(orderId, newOrderDetail);
     }
 
     @Override
     public Order updateOrder(Integer orderId, Order newOrder) {
+        checkProductStock(newOrder.getDetails(), null);
         Order orderUpdated = orderRepository.updateOrder(orderId, newOrder);
         if (orderUpdated == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
         }
         return orderUpdated;
+    }
+
+    private void checkProductStock(List<OrderDetail> orderDetails, OrderDetail orderDetail) {
+        if (orderDetail != null) {
+            try {
+                ResponseEntity<ProductDTO> response =
+                        WebClient.create("http://localhost:8082/api-products/products/" + orderDetail.getProduct().getId()).get()
+                                .accept(MediaType.APPLICATION_JSON)
+                                .retrieve()
+                                .toEntity(ProductDTO.class)
+                                .block();
+
+                if (response != null && response.getBody() != null) {
+                    ProductDTO product = response.getBody();
+                    if (product.getActualStock() < orderDetail.getQuantity()) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST.toString(),
+                                "Product " + product.getName() + " does not have stock.",
+                                HttpStatus.BAD_REQUEST.value());
+                    }
+                }
+            } catch (WebClientException e) {
+                throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            }
+        } else {
+            for (OrderDetail detail : orderDetails) {
+                try {
+                    ResponseEntity<ProductDTO> response =
+                            WebClient.create("http://localhost:8082/api-products/products/" + detail.getProduct().getId()).get()
+                                    .accept(MediaType.APPLICATION_JSON)
+                                    .retrieve()
+                                    .toEntity(ProductDTO.class)
+                                    .block();
+
+                    if (response != null && response.getBody() != null) {
+                        ProductDTO product = response.getBody();
+                        if (product.getActualStock() < detail.getQuantity()) {
+                            throw new ApiException(HttpStatus.BAD_REQUEST.toString(),
+                                    "Product " + product.getName() + " does not have stock.",
+                                    HttpStatus.BAD_REQUEST.value());
+                        }
+                    }
+                } catch (WebClientException e) {
+                    throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                }
+            }
+        }
     }
 
     @Override
