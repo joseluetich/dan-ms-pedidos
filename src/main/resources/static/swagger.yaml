@@ -1,0 +1,364 @@
+swagger: "2.0"
+info:
+  description: ""
+  version: "1.0.0"
+  title: "Orders Api"
+host: "localhost:8081"
+basePath: "/api-orders"
+tags:
+  - name: "Orders"
+    description: "Allows to manage orders"
+paths:
+  /orders:
+    post:
+      tags:
+        - "Orders"
+      summary: "Add a new order"
+      description: ""
+      operationId: "createOrder"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Order that needs to be created"
+          required: true
+          schema:
+            $ref: "#/definitions/Order"
+      responses:
+        "200":
+          description: "Order created correctly"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "405":
+          description: "Invalid input"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+    get:
+      tags:
+        - "Orders"
+      summary: "Search orders"
+      description: "Returns a list of orders"
+      operationId: "getOrders"
+      parameters:
+        - name: "clientId"
+          in: "query"
+          description: "Id of the client associated to the order"
+          required: false
+          type: integer
+        - name: "ClientCUIT"
+          in: "query"
+          description: "CUIT of the client associated to the order"
+          required: false
+          type: string
+        - name: "constructionId"
+          in: "query"
+          description: "Id of the construction associated to the order"
+          required: false
+          type: integer
+      produces:
+        - "application/json"
+      responses:
+        "200":
+          description: "Returns all the order filter by parameters"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Order"
+        "404":
+          description: "Orders not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /orders/{id}:
+    get:
+      tags:
+        - "Orders"
+      summary: "Find order by ID"
+      description: ""
+      operationId: "getOrderById"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "ID of order to return"
+          required: true
+          type: "integer"
+      responses:
+        "200":
+          description: "Order found correctly"
+          schema:
+            $ref: "#/definitions/Client"
+        "400":
+          description: "Invalid ID supplied"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "404":
+          description: "Order not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+    put:
+      tags:
+        - "Orders"
+      summary: "Update an existing order"
+      description: ""
+      operationId: "updateOrder"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Order that needs to be updated"
+          required: true
+          schema:
+            $ref: "#/definitions/Client"
+        - name: "id"
+          in: "path"
+          description: "ID of order to edit"
+          required: true
+          type: "integer"
+      responses:
+        "200":
+          description: "Order updated correctly"
+          schema:
+            $ref: "#/definitions/Order"
+        "400":
+          description: "Invalid ID supplied"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "404":
+          description: "Order not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "405":
+          description: "Validation exception"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+    delete:
+      tags:
+        - "Orders"
+      summary: "Deletes an order"
+      description: ""
+      operationId: "deleteOrder"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID of the order to delete"
+      responses:
+        "200":
+          description: "Order deleted correctly"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: "Invalid ID supplied"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "404":
+          description: "Order not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /orders/{id}/detail:
+    post:
+      tags:
+        - "Orders"
+      summary: "Add a new order detail to existing order"
+      description: ""
+      operationId: "addOrderDetail"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "ID of the existing order"
+          required: true
+          type: "integer"
+        - in: "body"
+          name: "body"
+          description: "Id of existing order"
+          required: true
+          schema:
+            $ref: "#/definitions/OrderDetail"
+      responses:
+        "200":
+          description: "Order created correctly"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "404":
+          description: "Order not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "405":
+          description: "Invalid input"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /orders/{idOrder}/detail/{idDetail}:
+    delete:
+      tags:
+        - "Orders"
+      summary: "Delete order detail in existing order"
+      description: ""
+      operationId: "deleteOrderDetail"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "idOrder"
+          in: "path"
+          description: "ID of the existing order"
+          required: true
+          type: "integer"
+        - name: "idDetail"
+          in: "path"
+          description: "ID of the existing orderDetail"
+          required: true
+          type: "integer"
+      responses:
+        "200":
+          description: "Order detail deleted successfully"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "404":
+          description: "Order or OrderDetail not found"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "405":
+          description: "Invalid input"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+    get:
+      tags:
+        - "Orders"
+      summary: "Get order detail by id"
+      description: ""
+      operationId: "getOrderDetailById"
+      consumes:
+          - "application/json"
+      produces:
+          - "application/json"
+      parameters:
+          - name: "idOrder"
+            in: "path"
+            description: "ID of the existing order"
+            required: true
+            type: "integer"
+          - name: "idDetail"
+            in: "path"
+            description: "ID of the existing orderDetail"
+            required: true
+            type: "integer"
+      responses:
+          "200":
+            description: "Order detail found"
+            schema:
+              $ref: "#/definitions/ApiResponse"
+          "404":
+            description: "Order or OrderDetail not found"
+            schema:
+              $ref: "#/definitions/ApiResponse"
+          "405":
+            description: "Invalid input"
+            schema:
+              $ref: "#/definitions/ApiResponse"
+definitions:
+  Client:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        example: 01
+      businessName:
+        type: "string"
+        example: "Rio Negro S.R.L"
+      cuit:
+        type: "string"
+        example: "33-35668993-6"
+      mail:
+        type: "string"
+        example: "administracion@rionegrosrl.com"
+  Construction:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        example: 001
+      description:
+        type: "string"
+        example: "Reforma de hogar"
+      client:
+        $ref: "#/definitions/Client"
+    xml:
+      name: "Construction"
+  Product:
+    type: "object"
+    properties:
+      id:
+        type: integer
+        example: 001
+      description:
+        type: string
+        example: "Cemento seca rapido"
+      price:
+        type: number
+        example: "350.00"
+  OrderState:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: 001
+      state:
+        type: string
+        example: "En proceso"
+  OrderDetail:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: 002
+      product:
+        $ref: "#/definitions/Product"
+      quantity:
+        type: integer
+        example: "10"
+      price:
+        type: number
+        example: "3500"
+  Order:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: "001"
+      orderDate:
+        type: string
+        example: "25/05/2021"
+      product:
+        $ref: "#/definitions/Construction"
+      orderDetail:
+        type: array
+        items:
+          $ref: "#/definitions/OrderDetail"
+      orderState:
+        $ref: "#/definitions/OrderState"
+  ApiResponse:
+    type: "object"
+    properties:
+      body:
+        type: "object"
+      statusCode:
+        type: "string"
+      statusCodeValue:
+        type: "string"
