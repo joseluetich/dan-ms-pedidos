@@ -3,13 +3,15 @@ package jms.dan.pedidos.dto;
 public class ConstructionDTO {
     private Integer id;
     private String description;
+    private Integer clientId;
 
     public ConstructionDTO() {
     }
 
-    public ConstructionDTO(Integer id, String description) {
+    public ConstructionDTO(Integer id, String description, Integer clientId) {
         this.id = id;
         this.description = description;
+        this.clientId = clientId;
     }
 
     public Integer getId() {
@@ -26,5 +28,13 @@ public class ConstructionDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Integer getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(Integer clientId) {
+        this.clientId = clientId;
     }
 }

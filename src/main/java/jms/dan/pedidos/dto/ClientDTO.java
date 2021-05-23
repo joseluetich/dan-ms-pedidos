@@ -5,14 +5,16 @@ public class ClientDTO {
     private String businessName;
     private String cuit;
     private String mail;
+    private Double currentBalance;
 
     public ClientDTO () {}
 
-    public ClientDTO(Integer id, String businessName, String cuit, String mail) {
+    public ClientDTO(Integer id, String businessName, String cuit, String mail, Double currentBalance) {
         this.id = id;
         this.businessName = businessName;
         this.cuit = cuit;
         this.mail = mail;
+        this.currentBalance = currentBalance;
     }
 
     public Integer getId() {
@@ -45,5 +47,13 @@ public class ClientDTO {
 
     public void setMail(String mail) {
         this.mail = mail;
+    }
+
+    public Double getCurrentBalance() {
+        return currentBalance;
+    }
+
+    public void setCurrentBalance(Double currentBalance) {
+        this.currentBalance = currentBalance;
     }
 }

@@ -32,18 +32,27 @@ public class OrderService implements IOrderService {
     @Override
     public void createOrder(Order newOrder) {
         checkProductStock(newOrder.getDetails(), null);
+        ClientDTO client = constructionRepository.getClientAssociated(newOrder.getConstruction().getId());
+        checkClientBalance(newOrder.getDetails(), client.getCurrentBalance());
         orderRepository.createOrder(newOrder);
     }
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
         checkProductStock(null, newOrderDetail);
+        Order order = orderRepository.getOrderById(orderId);
+        List<OrderDetail> orderDetails = new ArrayList<>(order.getDetails());
+        orderDetails.add(newOrderDetail);
+        ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
+        checkClientBalance(orderDetails, client.getCurrentBalance());
         orderRepository.addOrderDetail(orderId, newOrderDetail);
     }
 
     @Override
     public Order updateOrder(Integer orderId, Order newOrder) {
         checkProductStock(newOrder.getDetails(), null);
+        ClientDTO client = constructionRepository.getClientAssociated(newOrder.getConstruction().getId());
+        checkClientBalance(newOrder.getDetails(), client.getCurrentBalance());
         Order orderUpdated = orderRepository.updateOrder(orderId, newOrder);
         if (orderUpdated == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
@@ -95,6 +104,16 @@ public class OrderService implements IOrderService {
                 }
             }
         }
+    }
+
+    private void checkClientBalance(List<OrderDetail> ordersDetails, Double clientBalance) {
+        Double balance = clientBalance;
+        for (OrderDetail orderDetail : ordersDetails) {
+            if (balance >= 0) balance -= (orderDetail.getPrice()*orderDetail.getQuantity());
+            else break;
+        }
+        if (balance < 0) throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
+                "Client balance insufficient", HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
     @Override
@@ -175,7 +194,7 @@ public class OrderService implements IOrderService {
                         .retrieve()
                         .toEntityList(ConstructionDTO.class)
                         .block();
-                if (response.getStatusCode().equals(HttpStatus.OK)) {
+                if (response != null && response.getStatusCode().equals(HttpStatus.OK)) {
                     List<ConstructionDTO> constructions = response.getBody();
                     if (constructions == null || constructions.isEmpty())
                         return new ArrayList<>();
