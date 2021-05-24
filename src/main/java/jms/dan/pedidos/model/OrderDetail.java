@@ -1,15 +1,17 @@
-package jms.dan.pedidos.domain;
+package jms.dan.pedidos.model;
+
+import jms.dan.pedidos.dto.ProductDTO;
 
 public class OrderDetail {
     private Integer id;
-    private Product product;
+    private ProductDTO product;
     private Integer quantity;
     private Double price;
 
     public OrderDetail() {
     }
 
-    public OrderDetail(Product product, Integer quantity, Double price) {
+    public OrderDetail(ProductDTO product, Integer quantity, Double price) {
         super();
         this.product = product;
         this.quantity = quantity;
@@ -24,11 +26,11 @@ public class OrderDetail {
         this.id = id;
     }
 
-    public Product getProduct() {
+    public ProductDTO getProduct() {
         return product;
     }
 
-    public void setProduct(Product product) {
+    public void setProduct(ProductDTO product) {
         this.product = product;
     }
 

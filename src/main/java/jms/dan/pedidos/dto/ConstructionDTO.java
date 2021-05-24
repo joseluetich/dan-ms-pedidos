@@ -1,17 +1,17 @@
-package jms.dan.pedidos.domain;
+package jms.dan.pedidos.dto;
 
-public class Product {
+public class ConstructionDTO {
     private Integer id;
     private String description;
-    private Double price;
+    private Integer clientId;
 
-    public Product() {
+    public ConstructionDTO() {
     }
 
-    public Product(Integer id, String description, Double price) {
+    public ConstructionDTO(Integer id, String description, Integer clientId) {
         this.id = id;
         this.description = description;
-        this.price = price;
+        this.clientId = clientId;
     }
 
     public Integer getId() {
@@ -30,11 +30,11 @@ public class Product {
         this.description = description;
     }
 
-    public Double getPrice() {
-        return price;
+    public Integer getClientId() {
+        return clientId;
     }
 
-    public void setPrice(Double price) {
-        this.price = price;
+    public void setClientId(Integer clientId) {
+        this.clientId = clientId;
     }
 }
