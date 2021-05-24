@@ -6,6 +6,7 @@ import jms.dan.pedidos.dto.ClientDTO;
 import jms.dan.pedidos.dto.ConstructionDTO;
 import jms.dan.pedidos.dto.ProductDTO;
 import jms.dan.pedidos.exceptions.ApiException;
+import jms.dan.pedidos.repository.IConstructionRepository;
 import jms.dan.pedidos.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,10 +24,12 @@ import java.util.stream.Collectors;
 @Service
 public class OrderService implements IOrderService {
     final OrderRepository orderRepository;
+    final IConstructionRepository constructionRepository;
 
     @Autowired
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, IConstructionRepository constructionRepository) {
         this.orderRepository = orderRepository;
+        this.constructionRepository = constructionRepository;
     }
 
     @Override

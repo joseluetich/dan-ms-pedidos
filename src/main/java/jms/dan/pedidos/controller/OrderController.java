@@ -24,6 +24,15 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody Order newOrder) {
+        if (newOrder.getConstruction() == null || newOrder.getConstruction().getId() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You must specify the construction associated");
+        }
+        if (newOrder.getDetails() == null || newOrder.getDetails().size() < 1) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You must specify at least one order detail");
+        }
+        if (newOrder.getDetails().get(0).getProduct() == null || newOrder.getDetails().get(0).getQuantity() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You must specify a product and a quantity");
+        }
         try {
             orderService.createOrder(newOrder);
             return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully");
