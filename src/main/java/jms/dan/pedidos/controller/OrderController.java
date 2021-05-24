@@ -1,7 +1,7 @@
 package jms.dan.pedidos.controller;
 
-import jms.dan.pedidos.domain.Order;
-import jms.dan.pedidos.domain.OrderDetail;
+import jms.dan.pedidos.model.Order;
+import jms.dan.pedidos.model.OrderDetail;
 import jms.dan.pedidos.exceptions.ApiError;
 import jms.dan.pedidos.exceptions.ApiException;
 import jms.dan.pedidos.service.OrderService;
@@ -35,7 +35,7 @@ public class OrderController {
         }
         try {
             orderService.createOrder(newOrder);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully");
+            return ResponseEntity.status(HttpStatus.CREATED).body(newOrder);
         } catch (ApiException e) {
             return new ResponseEntity<>(
                     new ApiError(e.getCode(), e.getDescription(), e.getStatusCode()),

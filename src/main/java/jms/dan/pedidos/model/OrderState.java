@@ -1,4 +1,4 @@
-package jms.dan.pedidos.domain;
+package jms.dan.pedidos.model;
 
 public class OrderState {
     private Integer id;

@@ -1,7 +1,7 @@
 package jms.dan.pedidos.service;
 
-import jms.dan.pedidos.domain.Order;
-import jms.dan.pedidos.domain.OrderDetail;
+import jms.dan.pedidos.model.Order;
+import jms.dan.pedidos.model.OrderDetail;
 
 import java.util.List;
 

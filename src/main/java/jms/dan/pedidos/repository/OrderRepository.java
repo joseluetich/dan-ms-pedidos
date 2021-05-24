@@ -1,7 +1,7 @@
 package jms.dan.pedidos.repository;
 
-import jms.dan.pedidos.domain.Order;
-import jms.dan.pedidos.domain.OrderDetail;
+import jms.dan.pedidos.model.Order;
+import jms.dan.pedidos.model.OrderDetail;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;

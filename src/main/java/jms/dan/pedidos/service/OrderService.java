@@ -1,11 +1,12 @@
 package jms.dan.pedidos.service;
 
-import jms.dan.pedidos.domain.Order;
-import jms.dan.pedidos.domain.OrderDetail;
 import jms.dan.pedidos.dto.ClientDTO;
 import jms.dan.pedidos.dto.ConstructionDTO;
 import jms.dan.pedidos.dto.ProductDTO;
 import jms.dan.pedidos.exceptions.ApiException;
+import jms.dan.pedidos.model.Order;
+import jms.dan.pedidos.model.OrderDetail;
+import jms.dan.pedidos.model.OrderState;
 import jms.dan.pedidos.repository.IConstructionRepository;
 import jms.dan.pedidos.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,89 +35,32 @@ public class OrderService implements IOrderService {
 
     @Override
     public void createOrder(Order newOrder) {
-        checkProductStock(newOrder.getDetails(), null);
-        ClientDTO client = constructionRepository.getClientAssociated(newOrder.getConstruction().getId());
-        checkClientBalance(newOrder.getDetails(), client.getCurrentBalance());
+        validateOrder(newOrder);
         orderRepository.createOrder(newOrder);
     }
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
-        checkProductStock(null, newOrderDetail);
         Order order = orderRepository.getOrderById(orderId);
-        List<OrderDetail> orderDetails = new ArrayList<>(order.getDetails());
-        orderDetails.add(newOrderDetail);
-        ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
-        checkClientBalance(orderDetails, client.getCurrentBalance());
+        if (checkProductStock(null, newOrderDetail)) {
+            List<OrderDetail> orderDetails = new ArrayList<>(order.getDetails());
+            orderDetails.add(newOrderDetail);
+            ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
+            checkClientBalance(orderDetails, client);
+            order.setState(new OrderState(01, "ACEPTADO"));
+        } else {
+            order.setState(new OrderState(02, "PENDIENTE"));
+        }
         orderRepository.addOrderDetail(orderId, newOrderDetail);
     }
 
     @Override
     public Order updateOrder(Integer orderId, Order newOrder) {
-        checkProductStock(newOrder.getDetails(), null);
-        ClientDTO client = constructionRepository.getClientAssociated(newOrder.getConstruction().getId());
-        checkClientBalance(newOrder.getDetails(), client.getCurrentBalance());
-        Order orderUpdated = orderRepository.updateOrder(orderId, newOrder);
-        if (orderUpdated == null) {
+        if (orderRepository.getOrderById(orderId) == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
         }
-        return orderUpdated;
-    }
-
-    private void checkProductStock(List<OrderDetail> orderDetails, OrderDetail orderDetail) {
-        if (orderDetail != null) {
-            try {
-                ResponseEntity<ProductDTO> response =
-                        WebClient.create("http://localhost:8082/api-products/products/" + orderDetail.getProduct().getId()).get()
-                                .accept(MediaType.APPLICATION_JSON)
-                                .retrieve()
-                                .toEntity(ProductDTO.class)
-                                .block();
-
-                if (response != null && response.getBody() != null) {
-                    ProductDTO product = response.getBody();
-                    if (product.getActualStock() < orderDetail.getQuantity()) {
-                        throw new ApiException(HttpStatus.BAD_REQUEST.toString(),
-                                "Product " + product.getName() + " does not have stock.",
-                                HttpStatus.BAD_REQUEST.value());
-                    }
-                }
-            } catch (WebClientException e) {
-                throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
-            }
-        } else {
-            for (OrderDetail detail : orderDetails) {
-                try {
-                    ResponseEntity<ProductDTO> response =
-                            WebClient.create("http://localhost:8082/api-products/products/" + detail.getProduct().getId()).get()
-                                    .accept(MediaType.APPLICATION_JSON)
-                                    .retrieve()
-                                    .toEntity(ProductDTO.class)
-                                    .block();
-
-                    if (response != null && response.getBody() != null) {
-                        ProductDTO product = response.getBody();
-                        if (product.getActualStock() < detail.getQuantity()) {
-                            throw new ApiException(HttpStatus.BAD_REQUEST.toString(),
-                                    "Product " + product.getName() + " does not have stock.",
-                                    HttpStatus.BAD_REQUEST.value());
-                        }
-                    }
-                } catch (WebClientException e) {
-                    throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
-                }
-            }
-        }
-    }
-
-    private void checkClientBalance(List<OrderDetail> ordersDetails, Double clientBalance) {
-        Double balance = clientBalance;
-        for (OrderDetail orderDetail : ordersDetails) {
-            if (balance >= 0) balance -= (orderDetail.getPrice()*orderDetail.getQuantity());
-            else break;
-        }
-        if (balance < 0) throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
-                "Client balance insufficient", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        validateOrder(newOrder);
+        return orderRepository.updateOrder(orderId, newOrder);
     }
 
     @Override
@@ -212,4 +156,64 @@ public class OrderService implements IOrderService {
         }
         return orderRepository.getOrders();
     }
+
+    public Boolean checkBCRACreditStatus(Integer clientId) {
+        //TODO To be defined
+        return true;
+    }
+
+    private void validateOrder(Order order) {
+        if (checkProductStock(order.getDetails(), null)) {
+            ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
+            checkClientBalance(order.getDetails(), client);
+            order.setState(new OrderState(01, "ACEPTADO"));
+        } else {
+            order.setState(new OrderState(02, "PENDIENTE"));
+        }
+    }
+
+    private boolean checkProductStock(List<OrderDetail> orderDetails, OrderDetail orderDetail) {
+        boolean check = true;
+        if (orderDetail != null) {
+            check = checkOrderStock(orderDetail);
+        } else {
+            for (OrderDetail detail : orderDetails) {
+                check = checkOrderStock(detail);
+                if (!check) break;
+            }
+        }
+        return check;
+    }
+
+    private boolean checkOrderStock(OrderDetail orderDetail) {
+        try {
+            ResponseEntity<ProductDTO> response =
+                    WebClient.create("http://localhost:8082/api-products/products/" + orderDetail.getProduct().getId()).get()
+                            .accept(MediaType.APPLICATION_JSON)
+                            .retrieve()
+                            .toEntity(ProductDTO.class)
+                            .block();
+
+            if (response != null && response.getBody() != null) {
+                ProductDTO product = response.getBody();
+                return product.getActualStock() >= orderDetail.getQuantity();
+            }
+        } catch (WebClientException e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        }
+        return false;
+    }
+
+    private void checkClientBalance(List<OrderDetail> ordersDetails, ClientDTO client) {
+        Double balance = client.getCurrentBalance();
+        for (OrderDetail orderDetail : ordersDetails) {
+            balance -= (orderDetail.getPrice() * orderDetail.getQuantity());
+        }
+
+        if (balance < 0 && !(Math.abs(balance) < client.getMaxCurrentAccount() && checkBCRACreditStatus(client.getId()))) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
+                    "Client balance insufficient", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        }
+    }
+
 }
