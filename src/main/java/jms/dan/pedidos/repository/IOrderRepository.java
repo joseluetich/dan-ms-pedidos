@@ -1,24 +1,24 @@
 package jms.dan.pedidos.repository;
 
 import jms.dan.pedidos.model.Order;
-import jms.dan.pedidos.model.OrderDetail;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
+@Repository
+public interface IOrderRepository extends JpaRepository<Order, Integer> {
+    // void createOrder(Order newOrder);
 
-public interface IOrderRepository {
-    void createOrder(Order newOrder);
+    // void deleteOrder(Integer orderId);
 
-    void deleteOrder(Integer orderId);
+    // Order updateOrder(Integer orderId, Order newOrder);
 
-    Order updateOrder(Integer orderId, Order newOrder);
+    // void addOrderDetail(Integer orderId, OrderDetail newOrderDetail);
 
-    void addOrderDetail(Integer orderId, OrderDetail newOrderDetail);
-
-    void deleteOrderDetail(Integer orderId, Integer orderDetailId);
+    // void deleteOrderDetail(Integer orderId, Integer orderDetailId);
 
     Order getOrderById(Integer orderId);
 
-    OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId);
+    // OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId);
 
-    List<Order> getOrders();
+    // List<Order> getOrders();
 }

@@ -2,8 +2,14 @@ package jms.dan.pedidos.model;
 
 import jms.dan.pedidos.dto.ProductDTO;
 
+import javax.persistence.*;
+
+@Entity
 public class OrderDetail {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
+    @Transient
     private ProductDTO product;
     private Integer quantity;
     private Double price;

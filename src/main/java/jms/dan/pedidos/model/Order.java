@@ -2,14 +2,21 @@ package jms.dan.pedidos.model;
 
 import jms.dan.pedidos.dto.ConstructionDTO;
 
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.List;
 
+@Entity
 public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
     private Instant orderDate;
+    @Transient
     private ConstructionDTO construction;
+    @OneToMany(cascade = CascadeType.ALL)
     private List<OrderDetail> details;
+    @ManyToOne(cascade = CascadeType.ALL)
     private OrderState state;
 
     public Order() {
