@@ -7,7 +7,7 @@ import javax.persistence.*;
 @Entity
 public class OrderDetail {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Transient
     private ProductDTO product;

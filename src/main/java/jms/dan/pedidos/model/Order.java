@@ -16,7 +16,7 @@ public class Order {
     private ConstructionDTO construction;
     @OneToMany(cascade = CascadeType.ALL)
     private List<OrderDetail> details;
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private OrderState state;
 
     public Order() {
