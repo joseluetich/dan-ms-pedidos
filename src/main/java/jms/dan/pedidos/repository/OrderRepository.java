@@ -10,17 +10,17 @@ import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 @Repository
-public class OrderRepository implements IOrderRepository {
+public class OrderRepository {
     private static final List<Order> ordersList = new ArrayList<>();
     private static Integer ID_GEN = 1;
 
-    @Override
+
     public void createOrder(Order newOrder) {
         newOrder.setId(ID_GEN++);
         ordersList.add(newOrder);
     }
 
-    @Override
+
     public void deleteOrder(Integer orderId) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size()).filter(i -> ordersList.get(i).getId().equals(orderId)).findFirst();
         if (indexOpt.isPresent()) {
@@ -28,7 +28,7 @@ public class OrderRepository implements IOrderRepository {
         }
     }
 
-    @Override
+
     public Order updateOrder(Integer orderId, Order newOrder) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size())
                 .filter(i -> ordersList.get(i).getId().equals(orderId))
@@ -40,7 +40,7 @@ public class OrderRepository implements IOrderRepository {
         return null;
     }
 
-    @Override
+
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size())
                 .filter(i -> ordersList.get(i).getId().equals(orderId))
@@ -57,7 +57,7 @@ public class OrderRepository implements IOrderRepository {
         }
     }
 
-    @Override
+
     public void deleteOrderDetail(Integer orderId, Integer orderDetailId) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size())
                 .filter(i -> ordersList.get(i).getId().equals(orderId))
@@ -73,7 +73,6 @@ public class OrderRepository implements IOrderRepository {
         }
     }
 
-    @Override
     public Order getOrderById(Integer orderId) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size()).filter(i -> ordersList.get(i).getId().equals(orderId)).findFirst();
         if (indexOpt.isPresent()) {
@@ -82,7 +81,7 @@ public class OrderRepository implements IOrderRepository {
         return null;
     }
 
-    @Override
+
     public OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId) {
         OptionalInt indexOpt = IntStream.range(0, ordersList.size())
                 .filter(i -> ordersList.get(i).getId().equals(orderId))
@@ -99,7 +98,7 @@ public class OrderRepository implements IOrderRepository {
         return null;
     }
 
-    @Override
+
     public List<Order> getOrders() {
         return ordersList;
     }

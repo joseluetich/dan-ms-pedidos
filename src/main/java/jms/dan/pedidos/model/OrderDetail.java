@@ -2,9 +2,16 @@ package jms.dan.pedidos.model;
 
 import jms.dan.pedidos.dto.ProductDTO;
 
+import javax.persistence.*;
+
+@Entity
 public class OrderDetail {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Transient
     private ProductDTO product;
+    private Integer productId;
     private Integer quantity;
     private Double price;
 
@@ -48,5 +55,13 @@ public class OrderDetail {
 
     public void setPrice(Double price) {
         this.price = price;
+    }
+
+    public Integer getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Integer productId) {
+        this.productId = productId;
     }
 }

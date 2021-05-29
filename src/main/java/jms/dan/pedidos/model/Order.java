@@ -2,14 +2,22 @@ package jms.dan.pedidos.model;
 
 import jms.dan.pedidos.dto.ConstructionDTO;
 
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.List;
 
+@Entity
 public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
     private Instant orderDate;
+    @Transient
     private ConstructionDTO construction;
+    private Integer constructionId;
+    @OneToMany(cascade = CascadeType.ALL)
     private List<OrderDetail> details;
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private OrderState state;
 
     public Order() {
@@ -61,5 +69,13 @@ public class Order {
 
     public void setState(OrderState state) {
         this.state = state;
+    }
+
+    public Integer getConstructionId() {
+        return constructionId;
+    }
+
+    public void setConstructionId(Integer constructionId) {
+        this.constructionId = constructionId;
     }
 }

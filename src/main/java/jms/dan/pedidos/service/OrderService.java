@@ -8,7 +8,9 @@ import jms.dan.pedidos.model.Order;
 import jms.dan.pedidos.model.OrderDetail;
 import jms.dan.pedidos.model.OrderState;
 import jms.dan.pedidos.repository.IConstructionRepository;
-import jms.dan.pedidos.repository.OrderRepository;
+import jms.dan.pedidos.repository.IOrderDetailRepository;
+import jms.dan.pedidos.repository.IOrderRepository;
+import jms.dan.pedidos.repository.IOrderStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,70 +26,83 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderService implements IOrderService {
-    final OrderRepository orderRepository;
+    final IOrderRepository orderRepository;
     final IConstructionRepository constructionRepository;
+    final IOrderStateRepository orderStateRepository;
+    final IOrderDetailRepository orderDetailRepository;
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, IConstructionRepository constructionRepository) {
+    public OrderService(
+            IOrderRepository orderRepository,
+            IConstructionRepository constructionRepository,
+            IOrderStateRepository orderStateRepository,
+            IOrderDetailRepository orderDetailRepository
+    ) {
         this.orderRepository = orderRepository;
         this.constructionRepository = constructionRepository;
+        this.orderStateRepository = orderStateRepository;
+        this.orderDetailRepository = orderDetailRepository;
     }
 
     @Override
     public void createOrder(Order newOrder) {
         validateOrder(newOrder);
-        orderRepository.createOrder(newOrder);
+        newOrder.setConstructionId(newOrder.getConstruction().getId());
+        for(OrderDetail detail : newOrder.getDetails()){
+            detail.setProductId(detail.getProduct().getId());
+        }
+        orderRepository.save(newOrder);
     }
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
-        Order order = orderRepository.getOrderById(orderId);
+        Order order = getOrderById(orderId);
+        List<OrderDetail> details = order.getDetails();
+        newOrderDetail.setProductId(newOrderDetail.getProduct().getId());
+        details.add(newOrderDetail);
         if (checkProductStock(null, newOrderDetail)) {
-            List<OrderDetail> orderDetails = new ArrayList<>(order.getDetails());
-            orderDetails.add(newOrderDetail);
             ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
-            checkClientBalance(orderDetails, client);
-            order.setState(new OrderState(01, "ACEPTADO"));
+            checkClientBalance(details, client);
+            OrderState state = orderStateRepository.findById(1).orElse(null);
+            order.setState(state);
         } else {
-            order.setState(new OrderState(02, "PENDIENTE"));
+            OrderState state = orderStateRepository.findById(2).orElse(null);
+            order.setState(state);
         }
-        orderRepository.addOrderDetail(orderId, newOrderDetail);
+        order.setDetails(details);
+        orderRepository.save(order);
+        orderDetailRepository.save(newOrderDetail);
     }
 
     @Override
     public Order updateOrder(Integer orderId, Order newOrder) {
-        if (orderRepository.getOrderById(orderId) == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
-        }
-        validateOrder(newOrder);
-        return orderRepository.updateOrder(orderId, newOrder);
+        // SE RESUELVE NO MODIFICAR LA INSTANCIA POR CRITERIOS NO DEFINIDOS
+        return getOrderById(orderId);
     }
 
     @Override
     public void deleteOrder(Integer orderId) {
-        Order order = orderRepository.getOrderById(orderId);
-        if (order == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
-        }
-        orderRepository.deleteOrder(orderId);
+        Order order = getOrderById(orderId);
+        orderRepository.deleteById(order.getId());
     }
 
     @Override
     public void deleteOrderDetail(Integer orderId, Integer orderDetailId) {
-        Order order = orderRepository.getOrderById(orderId);
-        if (order == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
-        }
-        OrderDetail orderDetail = orderRepository.getOrderDetailById(orderId, orderDetailId);
-        if (orderDetail == null) {
+        Order order = getOrderById(orderId);
+        OrderDetail orderDetail = orderDetailRepository.findById(orderDetailId).orElse(null);
+        OrderDetail detail = order.getDetails().stream().filter(od -> od.getId().equals(orderDetailId)).findFirst().orElse(null);
+        if (detail == null || orderDetail == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order detail not found", HttpStatus.NOT_FOUND.value());
         }
-        orderRepository.deleteOrderDetail(orderId, orderDetailId);
+        List<OrderDetail> details = order.getDetails().stream().filter(det -> !det.getId().equals(orderDetailId)).collect(Collectors.toList());
+        order.setDetails(details);
+        orderRepository.save(order);
+        orderDetailRepository.deleteById(orderDetailId);
     }
 
     @Override
     public Order getOrderById(Integer orderId) {
-        Order order = orderRepository.getOrderById(orderId);
+        Order order = orderRepository.findById(orderId).orElse(null);
         if (order == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
         }
@@ -96,15 +111,13 @@ public class OrderService implements IOrderService {
 
     @Override
     public OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId) {
-        Order order = orderRepository.getOrderById(orderId);
-        if (order == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order not found", HttpStatus.NOT_FOUND.value());
-        }
-        OrderDetail orderDetail = orderRepository.getOrderDetailById(orderId, orderDetailId);
-        if (orderDetail == null) {
+        Order order = getOrderById(orderId);
+        List<OrderDetail> details = order.getDetails();
+        OrderDetail detail = details.stream().filter(orderDetail -> orderDetail.getId().equals(orderDetailId)).findFirst().orElse(null);
+        if (detail == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order detail not found", HttpStatus.NOT_FOUND.value());
         }
-        return orderDetail;
+        return detail;
     }
 
     // TODO it should filter by all params at same time
@@ -112,9 +125,9 @@ public class OrderService implements IOrderService {
     public List<Order> getOrders(Integer clientId, String clientCuit, Integer constructionId) {
         Integer clientIdExtra = null;
         if (constructionId != null) {
-            return orderRepository.getOrders()
+            return orderRepository.findAll()
                     .stream()
-                    .filter(or -> or.getConstruction().getId().equals(constructionId)).collect(Collectors.toList());
+                    .filter(or -> or.getConstructionId().equals(constructionId)).collect(Collectors.toList());
         }
         if (clientCuit != null) {
             WebClient webClient = WebClient.create("http://localhost:8080/api-users/clients/cuit/" + clientCuit);
@@ -143,22 +156,21 @@ public class OrderService implements IOrderService {
                         .block();
                 if (response != null && response.getStatusCode().equals(HttpStatus.OK)) {
                     List<ConstructionDTO> constructions = response.getBody();
-                    if (constructions == null || constructions.isEmpty())
-                        return new ArrayList<>();
+                    if (constructions == null || constructions.isEmpty()) return new ArrayList<>();
+
                     List<Integer> constructionsId = constructions.stream().map(ConstructionDTO::getId).collect(Collectors.toList());
-                    return orderRepository.getOrders()
+                    return orderRepository.findAll()
                             .stream()
-                            .filter(or -> constructionsId.contains(or.getConstruction().getId())).collect(Collectors.toList());
+                            .filter(or -> constructionsId.contains(or.getConstructionId())).collect(Collectors.toList());
                 }
             } catch (WebClientException e) {
                 throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
         }
-        return orderRepository.getOrders();
+        return orderRepository.findAll();
     }
 
     public Boolean checkBCRACreditStatus(Integer clientId) {
-        //TODO To be defined
         return true;
     }
 
@@ -166,9 +178,11 @@ public class OrderService implements IOrderService {
         if (checkProductStock(order.getDetails(), null)) {
             ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
             checkClientBalance(order.getDetails(), client);
-            order.setState(new OrderState(01, "ACEPTADO"));
+            OrderState state = orderStateRepository.findById(1).orElse(null);
+            order.setState(state);
         } else {
-            order.setState(new OrderState(02, "PENDIENTE"));
+            OrderState state = orderStateRepository.findById(2).orElse(null);
+            order.setState(state);
         }
     }
 
