@@ -14,6 +14,7 @@ public class Order {
     private Instant orderDate;
     @Transient
     private ConstructionDTO construction;
+    private Integer constructionId;
     @OneToMany(cascade = CascadeType.ALL)
     private List<OrderDetail> details;
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -68,5 +69,13 @@ public class Order {
 
     public void setState(OrderState state) {
         this.state = state;
+    }
+
+    public Integer getConstructionId() {
+        return constructionId;
+    }
+
+    public void setConstructionId(Integer constructionId) {
+        this.constructionId = constructionId;
     }
 }

@@ -47,14 +47,18 @@ public class OrderService implements IOrderService {
     @Override
     public void createOrder(Order newOrder) {
         validateOrder(newOrder);
+        newOrder.setConstructionId(newOrder.getConstruction().getId());
+        for(OrderDetail detail : newOrder.getDetails()){
+            detail.setProductId(detail.getProduct().getId());
+        }
         orderRepository.save(newOrder);
     }
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
-        // TODO probar
         Order order = getOrderById(orderId);
         List<OrderDetail> details = order.getDetails();
+        newOrderDetail.setProductId(newOrderDetail.getProduct().getId());
         details.add(newOrderDetail);
         if (checkProductStock(null, newOrderDetail)) {
             ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
@@ -84,7 +88,6 @@ public class OrderService implements IOrderService {
 
     @Override
     public void deleteOrderDetail(Integer orderId, Integer orderDetailId) {
-        // TODO probar
         Order order = getOrderById(orderId);
         OrderDetail orderDetail = orderDetailRepository.findById(orderDetailId).orElse(null);
         OrderDetail detail = order.getDetails().stream().filter(od -> od.getId().equals(orderDetailId)).findFirst().orElse(null);
@@ -108,7 +111,6 @@ public class OrderService implements IOrderService {
 
     @Override
     public OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId) {
-        // TODO probar
         Order order = getOrderById(orderId);
         List<OrderDetail> details = order.getDetails();
         OrderDetail detail = details.stream().filter(orderDetail -> orderDetail.getId().equals(orderDetailId)).findFirst().orElse(null);
@@ -121,12 +123,11 @@ public class OrderService implements IOrderService {
     // TODO it should filter by all params at same time
     @Override
     public List<Order> getOrders(Integer clientId, String clientCuit, Integer constructionId) {
-        // TODO
         Integer clientIdExtra = null;
         if (constructionId != null) {
             return orderRepository.findAll()
                     .stream()
-                    .filter(or -> or.getConstruction().getId().equals(constructionId)).collect(Collectors.toList());
+                    .filter(or -> or.getConstructionId().equals(constructionId)).collect(Collectors.toList());
         }
         if (clientCuit != null) {
             WebClient webClient = WebClient.create("http://localhost:8080/api-users/clients/cuit/" + clientCuit);
@@ -160,7 +161,7 @@ public class OrderService implements IOrderService {
                     List<Integer> constructionsId = constructions.stream().map(ConstructionDTO::getId).collect(Collectors.toList());
                     return orderRepository.findAll()
                             .stream()
-                            .filter(or -> constructionsId.contains(or.getConstruction().getId())).collect(Collectors.toList());
+                            .filter(or -> constructionsId.contains(or.getConstructionId())).collect(Collectors.toList());
                 }
             } catch (WebClientException e) {
                 throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());

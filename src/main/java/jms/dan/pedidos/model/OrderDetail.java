@@ -11,6 +11,7 @@ public class OrderDetail {
     private Integer id;
     @Transient
     private ProductDTO product;
+    private Integer productId;
     private Integer quantity;
     private Double price;
 
@@ -54,5 +55,13 @@ public class OrderDetail {
 
     public void setPrice(Double price) {
         this.price = price;
+    }
+
+    public Integer getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Integer productId) {
+        this.productId = productId;
     }
 }
