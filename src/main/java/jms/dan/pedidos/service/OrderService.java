@@ -52,20 +52,22 @@ public class OrderService implements IOrderService {
 
     @Override
     public void addOrderDetail(Integer orderId, OrderDetail newOrderDetail) {
-        // TODO
+        // TODO probar
         Order order = getOrderById(orderId);
+        List<OrderDetail> details = order.getDetails();
+        details.add(newOrderDetail);
         if (checkProductStock(null, newOrderDetail)) {
-            List<OrderDetail> orderDetails = new ArrayList<>(order.getDetails());
-            orderDetails.add(newOrderDetail);
             ClientDTO client = constructionRepository.getClientAssociated(order.getConstruction().getId());
-            checkClientBalance(orderDetails, client);
+            checkClientBalance(details, client);
             OrderState state = orderStateRepository.findById(1).orElse(null);
             order.setState(state);
         } else {
             OrderState state = orderStateRepository.findById(2).orElse(null);
             order.setState(state);
         }
-        // orderRepository.addOrderDetail(orderId, newOrderDetail);
+        order.setDetails(details);
+        orderRepository.save(order);
+        orderDetailRepository.save(newOrderDetail);
     }
 
     @Override
@@ -82,13 +84,14 @@ public class OrderService implements IOrderService {
 
     @Override
     public void deleteOrderDetail(Integer orderId, Integer orderDetailId) {
-        // TODO armar una query para buscar el detalle de la orden
+        // TODO probar
         Order order = getOrderById(orderId);
         OrderDetail orderDetail = orderDetailRepository.findById(orderDetailId).orElse(null);
-        if (orderDetail == null) {
+        OrderDetail detail = order.getDetails().stream().filter(od -> od.getId().equals(orderDetailId)).findFirst().orElse(null);
+        if (detail == null || orderDetail == null) {
             throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order detail not found", HttpStatus.NOT_FOUND.value());
         }
-        List<OrderDetail> details = order.getDetails().stream().filter(detail -> !detail.getId().equals(orderDetailId)).collect(Collectors.toList());
+        List<OrderDetail> details = order.getDetails().stream().filter(det -> !det.getId().equals(orderDetailId)).collect(Collectors.toList());
         order.setDetails(details);
         orderRepository.save(order);
         orderDetailRepository.deleteById(orderDetailId);
@@ -105,14 +108,14 @@ public class OrderService implements IOrderService {
 
     @Override
     public OrderDetail getOrderDetailById(Integer orderId, Integer orderDetailId) {
-        // TODO
+        // TODO probar
         Order order = getOrderById(orderId);
-//        OrderDetail orderDetail = orderRepository.getOrderDetailById(orderId, orderDetailId);
-//        if (orderDetail == null) {
-//            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order detail not found", HttpStatus.NOT_FOUND.value());
-//        }
-        // return orderDetail;
-        return null;
+        List<OrderDetail> details = order.getDetails();
+        OrderDetail detail = details.stream().filter(orderDetail -> orderDetail.getId().equals(orderDetailId)).findFirst().orElse(null);
+        if (detail == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND.toString(), "Order detail not found", HttpStatus.NOT_FOUND.value());
+        }
+        return detail;
     }
 
     // TODO it should filter by all params at same time
@@ -152,8 +155,8 @@ public class OrderService implements IOrderService {
                         .block();
                 if (response != null && response.getStatusCode().equals(HttpStatus.OK)) {
                     List<ConstructionDTO> constructions = response.getBody();
-                    if (constructions == null || constructions.isEmpty())
-                        return new ArrayList<>();
+                    if (constructions == null || constructions.isEmpty()) return new ArrayList<>();
+
                     List<Integer> constructionsId = constructions.stream().map(ConstructionDTO::getId).collect(Collectors.toList());
                     return orderRepository.findAll()
                             .stream()
@@ -167,7 +170,6 @@ public class OrderService implements IOrderService {
     }
 
     public Boolean checkBCRACreditStatus(Integer clientId) {
-        //TODO To be defined
         return true;
     }
 
