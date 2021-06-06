@@ -55,9 +55,14 @@ public class OrderService implements IOrderService {
         for(OrderDetail detail : newOrder.getDetails()){
             detail.setProductId(detail.getProduct().getId());
         }
-        orderRepository.save(newOrder);
 
-        jmsTemplate.convertAndSend("COLA_PEDIDOS", newOrder);
+        Order order = orderRepository.save(newOrder);
+
+        List<Integer> orderDetailIds = new ArrayList<>();
+        for (OrderDetail detail : order.getDetails()){
+            orderDetailIds.add(detail.getId());
+        }
+        jmsTemplate.convertAndSend("COLA_PEDIDOS", orderDetailIds);
     }
 
     @Override
