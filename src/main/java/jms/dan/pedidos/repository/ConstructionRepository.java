@@ -51,7 +51,7 @@ public class ConstructionRepository implements IConstructionRepository {
                     .block();
             Integer clientId = null;
             if (response != null && response.getStatusCode().equals(HttpStatus.OK)) {
-                clientId = Objects.requireNonNull(response.getBody()).getClientId();
+                clientId = Objects.requireNonNull(response.getBody()).getClient().getId();
             }
             if (clientId == null) throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
                     "An error has occurred - Client id not found", HttpStatus.INTERNAL_SERVER_ERROR.value());

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
@@ -30,18 +31,21 @@ public class OrderService implements IOrderService {
     final IConstructionRepository constructionRepository;
     final IOrderStateRepository orderStateRepository;
     final IOrderDetailRepository orderDetailRepository;
+    final JmsTemplate jmsTemplate;
 
     @Autowired
     public OrderService(
             IOrderRepository orderRepository,
             IConstructionRepository constructionRepository,
             IOrderStateRepository orderStateRepository,
-            IOrderDetailRepository orderDetailRepository
+            IOrderDetailRepository orderDetailRepository,
+            JmsTemplate jmsTemplate
     ) {
         this.orderRepository = orderRepository;
         this.constructionRepository = constructionRepository;
         this.orderStateRepository = orderStateRepository;
         this.orderDetailRepository = orderDetailRepository;
+        this.jmsTemplate = jmsTemplate;
     }
 
     @Override
@@ -51,7 +55,14 @@ public class OrderService implements IOrderService {
         for(OrderDetail detail : newOrder.getDetails()){
             detail.setProductId(detail.getProduct().getId());
         }
-        orderRepository.save(newOrder);
+
+        Order order = orderRepository.save(newOrder);
+
+        List<Integer> orderDetailIds = new ArrayList<>();
+        for (OrderDetail detail : order.getDetails()){
+            orderDetailIds.add(detail.getId());
+        }
+        jmsTemplate.convertAndSend("COLA_PEDIDOS", orderDetailIds);
     }
 
     @Override
