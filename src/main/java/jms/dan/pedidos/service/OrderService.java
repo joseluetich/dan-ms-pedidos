@@ -62,7 +62,9 @@ public class OrderService implements IOrderService {
         for (OrderDetail detail : order.getDetails()){
             orderDetailIds.add(detail.getId());
         }
-        jmsTemplate.convertAndSend("COLA_PEDIDOS", orderDetailIds);
+
+        // TODO this ih throwing ActiveMQNotConnectedException[errorType=NOT_CONNECTED message=AMQ219007: Cannot connect to server(s)
+        // jmsTemplate.convertAndSend("COLA_PEDIDOS", orderDetailIds);
     }
 
     @Override
