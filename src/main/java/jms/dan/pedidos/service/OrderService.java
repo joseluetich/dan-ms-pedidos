@@ -19,6 +19,8 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,7 @@ public class OrderService implements IOrderService {
     final IOrderStateRepository orderStateRepository;
     final IOrderDetailRepository orderDetailRepository;
     final JmsTemplate jmsTemplate;
+    final CircuitBreakerFactory circuitBreakerFactory;
 
     @Autowired
     public OrderService(
@@ -39,13 +42,15 @@ public class OrderService implements IOrderService {
             IConstructionRepository constructionRepository,
             IOrderStateRepository orderStateRepository,
             IOrderDetailRepository orderDetailRepository,
-            JmsTemplate jmsTemplate
+            JmsTemplate jmsTemplate,
+            CircuitBreakerFactory circuitBreakerFactory
     ) {
         this.orderRepository = orderRepository;
         this.constructionRepository = constructionRepository;
         this.orderStateRepository = orderStateRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.jmsTemplate = jmsTemplate;
+        this.circuitBreakerFactory = circuitBreakerFactory;
     }
 
     @Override
@@ -213,7 +218,8 @@ public class OrderService implements IOrderService {
     }
 
     private boolean checkOrderStock(OrderDetail orderDetail) {
-        try {
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
+        return circuitBreaker.run(() -> {
             ResponseEntity<ProductDTO> response =
                     WebClient.create("http://localhost:8082/api-products/products/" + orderDetail.getProduct().getId()).get()
                             .accept(MediaType.APPLICATION_JSON)
@@ -225,9 +231,11 @@ public class OrderService implements IOrderService {
                 ProductDTO product = response.getBody();
                 return product.getActualStock() >= orderDetail.getQuantity();
             }
-        } catch (WebClientException e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        }
+            return false;
+        } , throwable -> defaultCheckOrderStock());
+    }
+
+    private boolean defaultCheckOrderStock() {
         return false;
     }
 
