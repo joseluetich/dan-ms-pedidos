@@ -7,10 +7,7 @@ import jms.dan.pedidos.exceptions.ApiException;
 import jms.dan.pedidos.model.Order;
 import jms.dan.pedidos.model.OrderDetail;
 import jms.dan.pedidos.model.OrderState;
-import jms.dan.pedidos.repository.IConstructionRepository;
-import jms.dan.pedidos.repository.IOrderDetailRepository;
-import jms.dan.pedidos.repository.IOrderRepository;
-import jms.dan.pedidos.repository.IOrderStateRepository;
+import jms.dan.pedidos.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,8 +30,11 @@ public class OrderService implements IOrderService {
     final IConstructionRepository constructionRepository;
     final IOrderStateRepository orderStateRepository;
     final IOrderDetailRepository orderDetailRepository;
+    final IProductRepository productRepository;
     final JmsTemplate jmsTemplate;
     final CircuitBreakerFactory circuitBreakerFactory;
+
+    private static final String BASEURL = "http://dan-gateway:8080";
 
     @Autowired
     public OrderService(
@@ -42,6 +42,7 @@ public class OrderService implements IOrderService {
             IConstructionRepository constructionRepository,
             IOrderStateRepository orderStateRepository,
             IOrderDetailRepository orderDetailRepository,
+            IProductRepository productRepository,
             JmsTemplate jmsTemplate,
             CircuitBreakerFactory circuitBreakerFactory
     ) {
@@ -49,6 +50,7 @@ public class OrderService implements IOrderService {
         this.constructionRepository = constructionRepository;
         this.orderStateRepository = orderStateRepository;
         this.orderDetailRepository = orderDetailRepository;
+        this.productRepository = productRepository;
         this.jmsTemplate = jmsTemplate;
         this.circuitBreakerFactory = circuitBreakerFactory;
     }
@@ -141,14 +143,15 @@ public class OrderService implements IOrderService {
     // TODO it should filter by all params at same time
     @Override
     public List<Order> getOrders(Integer clientId, String clientCuit, Integer constructionId) {
+        List<Order> results = new ArrayList<>();
         Integer clientIdExtra = null;
         if (constructionId != null) {
-            return orderRepository.findAll()
+            results = orderRepository.findAll()
                     .stream()
                     .filter(or -> or.getConstructionId().equals(constructionId)).collect(Collectors.toList());
         }
         if (clientCuit != null) {
-            WebClient webClient = WebClient.create("http://dan-gateway:8080/users/api-users/clients/cuit/" + clientCuit);
+            WebClient webClient = WebClient.create(BASEURL + "/users/api-users/clients/cuit/" + clientCuit);
             try {
                 ResponseEntity<ClientDTO> response = webClient.get()
                         .accept(MediaType.APPLICATION_JSON)
@@ -165,7 +168,7 @@ public class OrderService implements IOrderService {
         if (clientId != null || clientIdExtra != null) {
             Integer client = clientId != null ? clientId : clientIdExtra;
 
-            WebClient webClient = WebClient.create("http://dan-gateway:8080/users/api-users/constructions?clientId=" + client);
+            WebClient webClient = WebClient.create(BASEURL + "/users/api-users/constructions?clientId=" + client);
             try {
                 ResponseEntity<List<ConstructionDTO>> response = webClient.get()
                         .accept(MediaType.APPLICATION_JSON)
@@ -177,7 +180,7 @@ public class OrderService implements IOrderService {
                     if (constructions == null || constructions.isEmpty()) return new ArrayList<>();
 
                     List<Integer> constructionsId = constructions.stream().map(ConstructionDTO::getId).collect(Collectors.toList());
-                    return orderRepository.findAll()
+                    results = orderRepository.findAll()
                             .stream()
                             .filter(or -> constructionsId.contains(or.getConstructionId())).collect(Collectors.toList());
                 }
@@ -185,7 +188,16 @@ public class OrderService implements IOrderService {
                 throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "An error has occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
         }
-        return orderRepository.findAll();
+        if(results.isEmpty()) results = orderRepository.findAll();
+        results = results.stream().map(order -> {
+            order.setConstruction(constructionRepository.getConstructionById(order.getConstructionId()));
+            order.setDetails(order.getDetails().stream().map(orderDetail -> {
+                orderDetail.setProduct(productRepository.getProductById(orderDetail.getProductId()));
+                  return orderDetail;
+                    }).collect(Collectors.toList()));
+            return order;
+        }).collect(Collectors.toList());
+        return results;
     }
 
     public Boolean checkBCRACreditStatus(Integer clientId) {
@@ -221,7 +233,7 @@ public class OrderService implements IOrderService {
         CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
         return circuitBreaker.run(() -> {
             ResponseEntity<ProductDTO> response =
-                    WebClient.create("http://localhost:8082/api-products/products/" + orderDetail.getProduct().getId()).get()
+                    WebClient.create(BASEURL + "/products/api-products/products/" + orderDetail.getProduct().getId()).get()
                             .accept(MediaType.APPLICATION_JSON)
                             .retrieve()
                             .toEntity(ProductDTO.class)

@@ -75,4 +75,25 @@ public class ConstructionRepository implements IConstructionRepository {
         System.out.println("********** CIRCUIT OPEN **********");
         return null;
     }
+
+    public ConstructionDTO getConstructionById(Integer idConstruction){
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
+        WebClient webClient = WebClient.create(CONSTRUCTION_URL + idConstruction);
+
+        return (ConstructionDTO) circuitBreaker.run(() -> {
+            ResponseEntity<ConstructionDTO> response = webClient.get()
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .toEntity(ConstructionDTO.class)
+                    .block();
+            ConstructionDTO constructionDTO = null;
+            if (response != null && response.getStatusCode().equals(HttpStatus.OK)) {
+                constructionDTO = Objects.requireNonNull(response.getBody());
+            } else {
+                throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
+                        "An error has occurred - Construction not found", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            }
+            return constructionDTO;
+        } , throwable -> defaultClientIdAssociated());
+    }
 }
