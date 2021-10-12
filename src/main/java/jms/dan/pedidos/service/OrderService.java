@@ -148,7 +148,7 @@ public class OrderService implements IOrderService {
                     .filter(or -> or.getConstructionId().equals(constructionId)).collect(Collectors.toList());
         }
         if (clientCuit != null) {
-            WebClient webClient = WebClient.create("http://localhost:8080/api-users/clients/cuit/" + clientCuit);
+            WebClient webClient = WebClient.create("http://dan-gateway:8080/users/api-users/clients/cuit/" + clientCuit);
             try {
                 ResponseEntity<ClientDTO> response = webClient.get()
                         .accept(MediaType.APPLICATION_JSON)
@@ -165,7 +165,7 @@ public class OrderService implements IOrderService {
         if (clientId != null || clientIdExtra != null) {
             Integer client = clientId != null ? clientId : clientIdExtra;
 
-            WebClient webClient = WebClient.create("http://localhost:8080/api-users/constructions?clientId=" + client);
+            WebClient webClient = WebClient.create("http://dan-gateway:8080/users/api-users/constructions?clientId=" + client);
             try {
                 ResponseEntity<List<ConstructionDTO>> response = webClient.get()
                         .accept(MediaType.APPLICATION_JSON)

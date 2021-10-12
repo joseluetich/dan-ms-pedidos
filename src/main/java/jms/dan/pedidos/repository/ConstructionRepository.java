@@ -16,7 +16,7 @@ import java.util.Objects;
 
 @Repository
 public class ConstructionRepository implements IConstructionRepository {
-    private static final String BASEURL = "http://localhost:8080/api-users/";
+    private static final String BASEURL = "http://dan-gateway:8080/users/api-users/";
     private static final String CONSTRUCTION_URL = BASEURL + "constructions/";
     private static final String CLIENTS_URL = BASEURL + "clients/";
 
